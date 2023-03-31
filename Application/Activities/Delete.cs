@@ -1,0 +1,37 @@
+using Application.Core;
+using Domain;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Persistence;
+
+namespace Application.Activities
+{
+    public abstract class Delete
+    {
+        public class Command : IRequest<Result<Unit>>
+        {
+            public Guid Id { get; init; }
+        }
+
+        public class Handler : IRequestHandler<Command, Result<Unit>>
+        {
+            private readonly DataContext _context;
+            public Handler(DataContext context)
+            {
+                _context = context;
+            }
+            public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
+            {
+
+                var activity = await _context.Activities.FindAsync(new object[] { request.Id }, cancellationToken: cancellationToken);
+
+                // if (activity == null) return null;
+                _context.Activities.Remove(activity);
+
+                var result = await _context.SaveChangesAsync(cancellationToken) > 0;
+
+                return !result ? Result<Unit>.Failure("Failed to delete the activity") : Result<Unit>.Success(Unit.Value); 
+            }
+        }
+    }
+}
